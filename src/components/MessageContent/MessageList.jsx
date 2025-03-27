@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import * as signalR from "@microsoft/signalr";
-import VoiceRecorder from "../VoiceRecorder"; // düzgün path ver
+import VoiceRecorder from "./VoiceRecorder";
+import VideoUploader from "./VideoUploader";
+import FileUploader from "./FileUploader";
 
 const MessageList = ({ user }) => {
   const [messages, setMessages] = useState([]);
@@ -13,7 +15,6 @@ const MessageList = ({ user }) => {
   const currentUser = JSON.parse(localStorage.getItem("user"));
   const apiUrl = import.meta.env.VITE_API_URL;
 
-  // ✅ Mesajları çəkmək
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -36,7 +37,6 @@ const MessageList = ({ user }) => {
     if (user?.id) fetchMessages();
   }, [user]);
 
-  // ✅ SignalR bağlantısı
   useEffect(() => {
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${apiUrl}/hubs/chat`, {
@@ -79,10 +79,8 @@ const MessageList = ({ user }) => {
     };
   }, [user]);
 
-  // ✅ Mesaj göndərmək
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
-
     try {
       await axios.post(
         `${apiUrl}/api/messages/send`,
@@ -97,14 +95,12 @@ const MessageList = ({ user }) => {
           },
         }
       );
-
       setNewMessage("");
     } catch (error) {
       console.error("Mesaj göndərilə bilmədi:", error);
     }
   };
 
-  // ✅ Yazıldığını qarşı tərəfə bildirmək
   const handleTyping = () => {
     if (connectionRef.current && user?.id) {
       connectionRef.current
@@ -113,11 +109,8 @@ const MessageList = ({ user }) => {
     }
   };
 
-  // ✅ Mesaj silmək funksiyası
   const handleDeleteMessage = async (messageId) => {
-    const confirmed = window.confirm(
-      "Bu mesajı silmək istədiyinizə əminsiniz?"
-    );
+    const confirmed = window.confirm("Bu mesajı silmək istədiyinizə əminsiniz?");
     if (!confirmed) return;
 
     try {
@@ -130,48 +123,73 @@ const MessageList = ({ user }) => {
     }
   };
 
-  // ✅ Səsli mesaj göndərmək
   const handleSendVoiceMessage = async (file) => {
     if (!file) return;
-
     const formData = new FormData();
     formData.append("file", file);
     formData.append("receiverId", user.id);
 
     try {
-      const response = await axios.post(
-        `${apiUrl}/api/messages/upload-audio`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${currentUser?.token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      console.log("Səsli mesaj göndərildi:", response.data);
+      const response = await axios.post(`${apiUrl}/api/messages/upload-audio`, formData, {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
       setMessages((prev) => [...prev, response.data]);
     } catch (error) {
       console.error("Səsli mesaj göndərilə bilmədi:", error);
     }
   };
 
+  const handleSendVideoMessage = async (file) => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("receiverId", user.id);
+
+    try {
+      const response = await axios.post(`${apiUrl}/api/messages/upload-video`, formData, {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      setMessages((prev) => [...prev, response.data]);
+    } catch (error) {
+      console.error("Video göndərilə bilmədi:", error);
+    }
+  };
+
+  const handleSendFile = async (file) => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("receiverId", user.id);
+
+    try {
+      const response = await axios.post(`${apiUrl}/api/messages/upload-file`, formData, {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      setMessages((prev) => [...prev, response.data]);
+    } catch (error) {
+      console.error("Fayl göndərilə bilmədi:", error);
+    }
+  };
+
   return (
     <div className="w-full md:w-2/3 border flex flex-col">
-      {/* Header */}
       <div className="py-2 px-3 bg-grey-lighter flex items-center">
         <img
           className="w-10 h-10 rounded-full"
-          src={
-            user.avatarUrl ? `${apiUrl}${user.avatarUrl}` : "default-avatar.png"
-          }
+          src={user.avatarUrl ? `${apiUrl}${user.avatarUrl}` : "default-avatar.png"}
           alt="chat avatar"
         />
         <div className="ml-4">
-          <p className="text-grey-darkest">
-            {user.fullName || user.userName}
-          </p>
+          <p className="text-grey-darkest">{user.fullName || user.userName}</p>
           {isTyping ? (
             <p className="text-red-500 text-xs italic">... yazır</p>
           ) : isUserOnline ? (
@@ -180,58 +198,64 @@ const MessageList = ({ user }) => {
         </div>
       </div>
 
-      {/* Messages */}
-      <div
-        className="px-3 py-2 overflow-y-auto"
-        style={{ backgroundColor: "#DAD3CC", height: "calc(100vh - 160px)" }}
-      >
+      <div className="px-3 py-2 overflow-y-auto" style={{ backgroundColor: "#DAD3CC", height: "calc(100vh - 160px)" }}>
         {messages.length === 0 ? (
-          <p className="text-sm text-center text-gray-600">
-            Hələ mesaj yoxdur
-          </p>
+          <p className="text-sm text-center text-gray-600">Hələ mesaj yoxdur</p>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex mb-2 ${
-                msg.senderId === currentUser?.user?.id ? "justify-end" : ""
-              }`}
-            >
-              <div
-                className="rounded py-2 px-3 relative"
-                style={{
-                  backgroundColor:
-                    msg.senderId === currentUser?.user?.id
-                      ? "#E2F7CB"
-                      : "#F2F2F2",
-                }}
-              >
-                {msg.audioPath ? (
-                  <audio
-                    controls
-                    src={`${apiUrl}${msg.audioPath}`}
-                    className="mt-1"
-                  />
-                ) : (
-                  <p className="text-sm mt-1">{msg.content}</p>
-                )}
+          messages.map((msg) => {
+            const fileUrl = msg.filePath ? `${apiUrl}${msg.filePath}` : null;
+            const fileName = msg.filePath?.split("/").pop();
+            const extension = fileName?.split(".").pop()?.toLowerCase();
 
-                <p className="text-right text-xs text-grey-dark mt-1">
-                  {new Date(msg.sentAt).toLocaleTimeString()}
-                  <button
-                    onClick={() => handleDeleteMessage(msg.id)}
-                    className="text-red-600 text-xs px-2"
-                  >
-                    Sil
-                  </button>
-                </p>
+            let content;
+            if (fileUrl && ["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
+              content = <img src={fileUrl} alt={fileName} className="mt-1 rounded max-w-xs" />;
+            } else if (fileUrl && ["mp4", "webm", "ogg"].includes(extension)) {
+              content = <video controls src={fileUrl} className="mt-1 rounded max-w-xs" />;
+            } else if (fileUrl && ["mp3", "wav", "aac"].includes(extension)) {
+              content = <audio controls src={fileUrl} className="mt-1" />;
+            } else if (fileUrl) {
+              content = (
+                <div className="mt-1 text-sm text-gray-800 bg-gray-100 p-2 rounded">
+                  <span className="font-medium">Fayl:</span>{" "}
+                  <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                    {fileName}
+                  </a>
+                </div>
+              );
+            } else if (msg.videoPath) {
+              content = <video controls src={`${apiUrl}${msg.videoPath}`} className="mt-1 rounded max-w-xs" />;
+            } else if (msg.audioPath) {
+              content = <audio controls src={`${apiUrl}${msg.audioPath}`} className="mt-1" />;
+            } else {
+              content = <p className="text-sm mt-1">{msg.content}</p>;
+            }
+
+            return (
+              <div
+                key={msg.id}
+                className={`flex mb-2 ${msg.senderId === currentUser?.user?.id ? "justify-end" : ""}`}
+              >
+                <div
+                  className="rounded py-2 px-3 relative"
+                  style={{
+                    backgroundColor: msg.senderId === currentUser?.user?.id ? "#E2F7CB" : "#F2F2F2",
+                  }}
+                >
+                  {content}
+                  <p className="text-right text-xs text-grey-dark mt-1">
+                    {new Date(msg.sentAt).toLocaleTimeString()}
+                    <button onClick={() => handleDeleteMessage(msg.id)} className="text-red-600 text-xs px-2">
+                      Sil
+                    </button>
+                  </p>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
-      {/* Input */}
       <div className="bg-grey-lighter px-4 py-4 flex items-center">
         <div className="flex-1 mx-4">
           <input
@@ -246,13 +270,12 @@ const MessageList = ({ user }) => {
             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
           />
         </div>
-        <button
-          onClick={handleSendMessage}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
+        <button onClick={handleSendMessage} className="bg-blue-500 text-white px-4 py-2 rounded">
           Göndər
         </button>
         <VoiceRecorder onSend={handleSendVoiceMessage} />
+        <VideoUploader onSend={handleSendVideoMessage} />
+        <FileUploader onSend={handleSendFile} />
       </div>
     </div>
   );
