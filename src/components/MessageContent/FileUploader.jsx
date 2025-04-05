@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { FiUploadCloud } from "react-icons/fi";
 
 const FileUploader = ({ onSend }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -14,9 +13,24 @@ const FileUploader = ({ onSend }) => {
   };
 
   return (
-    <div className="ml-2 relative">
-      <label className="cursor-pointer bg-indigo-500 text-white px-3 py-2 rounded hover:bg-indigo-600 transition">
-        Fayl seç
+    <div className="ms-4 relative">
+      <label className="cursor-pointer p-2 rounded-full hover:bg-gray-200 transition">
+        
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-gray-700"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 12V4m0 0L8 8m4-4l4 4"
+          />
+        </svg>
+
         <input
           type="file"
           onChange={handleFileChange}
@@ -26,7 +40,10 @@ const FileUploader = ({ onSend }) => {
 
       {isUploading && (
         <div className="absolute top-0 right-0">
-          <svg className="animate-spin h-5 w-5 text-white ml-2 mt-2" viewBox="0 0 24 24">
+          <svg
+            className="animate-spin h-4 w-4 text-gray-500 ml-1 mt-1"
+            viewBox="0 0 24 24"
+          >
             <circle
               className="opacity-25"
               cx="12"
