@@ -79,6 +79,33 @@ export const useMessageEffects = ({
   }, [messages]);
 
 
+    useEffect(() => {
+      const connection = connectionRef.current;
 
+      if (!connection) return;
+
+      const handleReceiveMessage = (incomingMessage) => {
+        setMessages((prev) => {
+          const newMsg = {
+            ...incomingMessage
+          };
+
+          if (newMsg.replyToMessageId) {
+            const replied = prev.find((m) => m.id === newMsg.replyToMessageId);
+            if (replied) {
+              newMsg.replyToMessage = replied;
+            }
+          }
+
+          return [...prev, newMsg];
+        });
+      };
+
+      connection.on("ReceiveMessage", handleReceiveMessage);
+
+      return () => {
+        connection.off("ReceiveMessage", handleReceiveMessage);
+      };
+    }, [connectionRef, setMessages]);
 
 };

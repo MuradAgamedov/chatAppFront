@@ -29,17 +29,7 @@ export const useChatConnection = ({
 
     connection.start().catch(console.error);
 
-    connection.on("ReceiveMessage", (message) => {
-      setMessages((prev) => {
-        const exists = prev.some((m) => m.id === message.id);
-        if (!exists) {
-          new Audio("/assets/music/receive.mp3").play();
-          setTimeout(() => scrollToBottom(), 100);
-          return [...prev, message];
-        }
-        return prev;
-      });
-    });
+  
     connection.on("ReceiveEditedMessage", (editedMessage) => {
       setMessages((prevMessages) =>
         prevMessages.map((msg) =>
