@@ -103,7 +103,7 @@ export const useChatConnection = ({
     connectionRef.current = connection;
     window.connectionRef = connectionRef;
     return () => connection.stop();
-  }, [user]);
+  }, [user?.id]);
 
   return connectionRef;
 };
